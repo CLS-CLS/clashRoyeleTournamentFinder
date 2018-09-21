@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 @Setter
 public class TournamentAggregation {
 
+    public static final String IN_PROGRESS = "inProgress";
+    public static final String IN_PREPARATION = "inPreparation";
     private TournamentFinder tournamentFinder;
 
     public TournamentAggregation(TournamentFinder tournamentFinder) {
@@ -20,10 +24,14 @@ public class TournamentAggregation {
 
 
     public Map<String, List<Tournament>> filterTournaments(Set<Tournament> tournaments) {
-        return tournaments.stream().parallel().filter(tournament -> "open".equals(tournament.getType()))
+        Map<String, List<Tournament>> result = tournaments.stream().parallel().filter(tournament -> "open".equals(tournament.getType()))
                 .filter(tournament -> tournament.getMaxCapacity() != 1000)
                 .filter(tournament -> tournament.getMaxCapacity() != tournament.getCapacity())
                 .collect(Collectors.groupingBy(Tournament::getStatus));
+        result.putIfAbsent(IN_PROGRESS, new ArrayList<>());
+        result.putIfAbsent(IN_PREPARATION, new ArrayList<>());
+        System.out.println("Tournaments filtered out: " + (tournaments.size() - result.values().stream().mapToInt(List::size).sum()));
+        return result;
     }
 
 
@@ -36,8 +44,8 @@ public class TournamentAggregation {
                 .thenComparing(Comparator.comparing(Tournament::getCapacity))
                 .thenComparing(Comparator.comparing(Tournament::getCreatedTime));
 
-        tournamentsPerType.get("inProgress").sort(inProgressComparator);
-        tournamentsPerType.get("inPreparation").sort(inPreparationComparator);
+        tournamentsPerType.get(IN_PROGRESS).sort(inProgressComparator);
+        tournamentsPerType.get(IN_PREPARATION).sort(inPreparationComparator);
 
     }
 
@@ -48,14 +56,18 @@ public class TournamentAggregation {
     }
 
     public Map<String, List<Tournament>> findTournamentsAndFilterSort() {
-        return filterAndSortTournaments(tournamentFinder.getTournaments(TournamentFinder.SEARCH_TOKENS));
+        Set<Tournament> tournaments = tournamentFinder.getTournamentsRecursivelly("");
+        System.out.println("Tournaments found : " + tournaments.size());
+        return filterAndSortTournaments(tournaments);
     }
 
     public static void main(String[] args) throws IOException {
         Function<List, String> customListToString = (List l) -> (String) l.stream().map(Object::toString).collect(Collectors.joining("\r\n"));
         Map<String, List<Tournament>> result = new TournamentAggregation(new TournamentFinder()).findTournamentsAndFilterSort();
-
-        System.out.println("STARTED \r\n" + customListToString.apply(result.get("inProgress")));
-        System.out.println("PREPARATION \r\n" + customListToString.apply(result.get("inPreparation")));
+        System.out.println("\r\n");
+        System.out.println("STARTED \r\n" + customListToString.apply(result.get(IN_PROGRESS)));
+        System.out.println("PREPARATION \r\n" + customListToString.apply(result.get(IN_PREPARATION)));
     }
+
+
 }

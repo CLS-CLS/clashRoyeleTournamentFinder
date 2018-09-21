@@ -18,6 +18,5 @@ public class TournamentFinderTest {
         Tournament tournament = new TournamentFinder().getObjectMapper().readValue(tournanent, Tournament.class);
 
         assertEquals(LocalDateTime.of(2018, 9, 19, 20, 0, 37), tournament.getCreatedTime());
-
     }
 }

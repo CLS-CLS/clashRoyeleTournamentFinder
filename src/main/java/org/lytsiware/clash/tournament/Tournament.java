@@ -39,10 +39,10 @@ public class Tournament {
 
     @Override
     public String toString() {
-        return String.format("%1$20s", name) + " " +
-                capacity +
-                "\\" + maxCapacity +
-                "  " + createdTime.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"));
+        return String.format("%1$20.20s", name)
+                + " "
+                + String.format("%1$2s/%2$2s", capacity,maxCapacity)
+                + "  " + createdTime.atZone(ZoneId.of("GMT")).withZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     @Override
